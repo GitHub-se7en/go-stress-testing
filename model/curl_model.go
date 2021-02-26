@@ -40,16 +40,12 @@ func (c *CURL) getDataValue(keys []string) []string {
 }
 
 // 从文件中解析curl
-func ParseTheFile(path string) (curl *CURL, err error) {
+func ParseTheFile(path string) (curl *CURL, listCurl []*CURL, err error) {
 
 	if path == "" {
 		err = errors.New("路径不能为空")
 
 		return
-	}
-
-	curl = &CURL{
-		Data: make(map[string][]string),
 	}
 
 	file, err := os.Open(path)
@@ -70,30 +66,73 @@ func ParseTheFile(path string) (curl *CURL, err error) {
 		return
 	}
 	data := string(dataBytes)
-
-	for len(data) > 0 {
-		if strings.HasPrefix(data, "curl") {
-			data = data[5:]
+	// 那个for循环不能动,只能在这for循环之前动了
+	listData := strings.Split(data, "$")
+	//data = listData[1]
+	for _, data := range listData {
+		// 由于有多个curl存在,所以把curl的声明放到了data数据循环里面
+		curl = &CURL{
+			Data: make(map[string][]string),
 		}
+		for len(data) > 0 {
+			if strings.HasPrefix(data, "curl") {
+				data = data[5:]
+			}
 
-		data = strings.TrimSpace(data)
-		var (
-			key   string
-			value string
-		)
+			data = strings.TrimSpace(data)
+			var (
+				key   string
+				value string
+			)
 
-		index := strings.Index(data, " ")
-		if index <= 0 {
-			break
-		}
-		key = strings.TrimSpace(data[:index])
-		data = data[index+1:]
-		data = strings.TrimSpace(data)
+			index := strings.Index(data, " ")
+			if index <= 0 {
+				break
+			}
+			key = strings.TrimSpace(data[:index])
+			data = data[index+1:]
+			data = strings.TrimSpace(data)
 
-		// url
-		if !strings.HasPrefix(key, "-") {
-			key = strings.Trim(key, "'")
-			curl.Data["curl"] = []string{key}
+			// url
+			if !strings.HasPrefix(key, "-") {
+				key = strings.Trim(key, "'")
+				curl.Data["curl"] = []string{key}
+
+				// 去除首尾空格
+				data = strings.TrimFunc(data, func(r rune) bool {
+					if r == ' ' || r == '\\' || r == '\n' {
+						return true
+					}
+
+					return false
+				})
+				continue
+			}
+
+			if strings.HasPrefix(data, "-") {
+				continue
+			}
+
+			var (
+				endSymbol = " "
+			)
+
+			if strings.HasPrefix(data, "'") {
+				endSymbol = "'"
+				data = data[1:]
+			}
+
+			index = strings.Index(data, endSymbol)
+			if index <= -1 {
+				index = len(data)
+				// break
+			}
+			value = data[:index]
+			if len(data) >= index+1 {
+				data = data[index+1:]
+			} else {
+				data = ""
+			}
 
 			// 去除首尾空格
 			data = strings.TrimFunc(data, func(r rune) bool {
@@ -103,51 +142,18 @@ func ParseTheFile(path string) (curl *CURL, err error) {
 
 				return false
 			})
-			continue
-		}
 
-		if strings.HasPrefix(data, "-") {
-			continue
-		}
-
-		var (
-			endSymbol = " "
-		)
-
-		if strings.HasPrefix(data, "'") {
-			endSymbol = "'"
-			data = data[1:]
-		}
-
-		index = strings.Index(data, endSymbol)
-		if index <= -1 {
-			index = len(data)
-			// break
-		}
-		value = data[:index]
-		if len(data) >= index+1 {
-			data = data[index+1:]
-		} else {
-			data = ""
-		}
-
-		// 去除首尾空格
-		data = strings.TrimFunc(data, func(r rune) bool {
-			if r == ' ' || r == '\\' || r == '\n' {
-				return true
+			if key == "" {
+				continue
 			}
 
-			return false
-		})
+			curl.Data[key] = append(curl.Data[key], value)
 
-		if key == "" {
-			continue
+			// break
+
 		}
-
-		curl.Data[key] = append(curl.Data[key], value)
-
-		// break
-
+		// 添加一个curl到list里面去
+		listCurl = append(listCurl, curl)
 	}
 
 	// debug

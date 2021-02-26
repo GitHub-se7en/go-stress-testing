@@ -14,6 +14,7 @@ import (
 	"go-stress-testing/server/golink"
 	"go-stress-testing/server/statistics"
 	"go-stress-testing/server/verify"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -34,7 +35,7 @@ func init() {
 }
 
 // 处理函数
-func Dispose(concurrency, totalNumber uint64, request *model.Request) {
+func Dispose(concurrency, totalNumber uint64, request *model.Request, listRequest []*model.Request) {
 
 	// 设置接收数据缓存
 	ch := make(chan *model.RequestResults, 1000)
@@ -50,7 +51,10 @@ func Dispose(concurrency, totalNumber uint64, request *model.Request) {
 		wg.Add(1)
 		switch request.Form {
 		case model.FormTypeHttp:
-
+			if len(listRequest) > 0 {
+				go golink.Http(i, ch, totalNumber, &wg, listRequest[rand.Intn(len(listRequest))])
+				continue
+			}
 			go golink.Http(i, ch, totalNumber, &wg, request)
 
 		case model.FormTypeWebSocket:

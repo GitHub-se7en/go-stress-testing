@@ -117,19 +117,20 @@ func (r *Request) GetVerifyWebSocket() VerifyWebSocket {
 // timeout 请求超时时间
 // debug 是否开启debug
 // path curl文件路径 http接口压测，自定义参数设置
-func NewRequest(url string, verify string, timeout time.Duration, debug bool, path string, reqHeaders []string, reqBody string) (request *Request, err error) {
+func NewRequest(url string, verify string, timeout time.Duration, debug bool, path string, reqHeaders []string, reqBody string) (request *Request, listRequest []*Request, err error) {
 
 	var (
-		method  = "GET"
-		headers = make(map[string]string)
-		body    string
+		method         = "GET"
+		headers        = make(map[string]string)
+		body           string
+		listCurlGlobal []*CURL
 	)
 
 	if path != "" {
-		curl, err := ParseTheFile(path)
+		curl, listCurl, err := ParseTheFile(path)
 		if err != nil {
 
-			return nil, err
+			return nil, nil, err
 		}
 
 		if url == "" {
@@ -139,6 +140,7 @@ func NewRequest(url string, verify string, timeout time.Duration, debug bool, pa
 		method = curl.GetMethod()
 		headers = curl.GetHeaders()
 		body = curl.GetBody()
+		listCurlGlobal = listCurl
 	} else {
 
 		if reqBody != "" {
@@ -218,6 +220,19 @@ func NewRequest(url string, verify string, timeout time.Duration, debug bool, pa
 		Verify:  verify,
 		Timeout: timeout,
 		Debug:   debug,
+	}
+	for _, v := range listCurlGlobal {
+		req := &Request{
+			Url:     v.GetUrl(),
+			Form:    form,
+			Method:  strings.ToUpper(v.GetMethod()),
+			Headers: v.GetHeaders(),
+			Body:    v.GetBody(),
+			Verify:  verify,
+			Timeout: timeout,
+			Debug:   debug,
+		}
+		listRequest = append(listRequest, req)
 	}
 
 	return

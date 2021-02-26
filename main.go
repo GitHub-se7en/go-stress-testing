@@ -67,7 +67,7 @@ func main() {
 		return
 	}
 	debug := strings.ToLower(debugStr) == "true"
-	request, err := model.NewRequest(requestUrl, verify, 0, debug, path, headers, body)
+	request, listRequest, err := model.NewRequest(requestUrl, verify, 0, debug, path, headers, body)
 	if err != nil {
 		fmt.Printf("参数不合法 %v \n", err)
 
@@ -78,7 +78,7 @@ func main() {
 	request.Print()
 
 	// 开始处理
-	server.Dispose(concurrency, totalNumber, request)
+	server.Dispose(concurrency, totalNumber, request, listRequest)
 
 	return
 }

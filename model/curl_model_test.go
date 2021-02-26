@@ -14,19 +14,21 @@ import (
 
 func TestCurl(t *testing.T) {
 	// ../curl.txt
-	c, err := ParseTheFile("../curl/test.post.curl.txt")
-	fmt.Println(c, err)
+	_, list, err := ParseTheFile("../curl/test.post.curl.txt")
+	//fmt.Println(c, err)
 
 	if err != nil {
 		return
 	}
+	for _, c := range list {
+		fmt.Printf("curl:%s \n", c.String())
+		fmt.Printf("url:%s \n", c.GetUrl())
+		fmt.Printf("method:%s \n", c.GetMethod())
+		fmt.Printf("body:%v \n", c.GetBody())
+		fmt.Printf("body string:%v \n", c.GetBody())
 
-	fmt.Printf("curl:%s \n", c.String())
-	fmt.Printf("url:%s \n", c.GetUrl())
-	fmt.Printf("method:%s \n", c.GetMethod())
-	fmt.Printf("body:%v \n", c.GetBody())
-	fmt.Printf("body string:%v \n", c.GetBody())
+		fmt.Printf("headers:%s \n", c.GetHeadersStr())
 
-	fmt.Printf("headers:%s \n", c.GetHeadersStr())
+	}
 
 }
